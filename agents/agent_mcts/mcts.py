@@ -19,7 +19,8 @@ class Node:
             win_count : number of wins this node leads to
             loss_count : number of losses this node leads to
             exploration_param : by default sqrt(2)
-            possible_actions : a list of columns which can be played
+            untried_actions : a list of columns which can be played and haven't been expanded yet
+            tried_actions : a list of columns where the node has been expanded already
             game_state : current state of the game
     """
 
@@ -38,9 +39,16 @@ class Node:
         self.win_count: int = 0
         self.loss_count: int = 0
         self.exploration_param: float = math.sqrt(2)
-        self.possible_actions: list[PlayerAction] = legal_actions(self.board)
+        self.untried_actions: list[PlayerAction] = legal_actions(self.board)
+        self.tried_actions: list[PlayerAction] = []
         self.game_state: GameState = check_end_state(board, self.player)
         return
+
+    def update_actions(self) -> list[PlayerAction]:
+        possible_actions = legal_actions(self.board)
+        self.untried_actions = [action for action in possible_actions if action not in self.tried_actions]
+        self.tried_actions = [action.parent_action for action in self.children]
+        return self.untried_actions
 
     def next_player(self) -> np.int8:
         """
@@ -49,18 +57,17 @@ class Node:
 
         return PLAYER1 if self.player == PLAYER2 else PLAYER2
 
-    def get_random_action(self) -> PlayerAction:
+    def get_random_untried_action(self) -> PlayerAction:
         """
         Returns a random column to play in, out of the available ones
         """
 
-        # update possible actions
-        self.possible_actions = legal_actions(self.board)
-        random_number = np.random.randint(0, len(self.possible_actions))
-        random_action = self.possible_actions[random_number]
+        self.update_actions()
+        random_number = np.random.randint(0, len(self.untried_actions))
+        random_action = self.untried_actions[random_number]
         return np.int8(random_action)
 
-    def is_last_child(self) -> bool:
+    def is_last_node(self) -> bool:
         """
         Returns true if the current node is at the end of the tree.
         Returns false if the current node can still be expanded.
@@ -108,9 +115,8 @@ class Node:
         Returns false if there are still actions to be tried
         """
 
-        # update possible actions
-        self.possible_actions = legal_actions(self.board)
-        return len(self.possible_actions) == 0
+        self.update_actions()
+        return len(self.untried_actions) == 0
 
     def ucb1(self) -> float:
         """
@@ -137,11 +143,12 @@ class Node:
         Returns the new node.
         """
 
-        random_action = self.get_random_action()
-        list(self.possible_actions).remove(random_action)
+        random_action = self.get_random_untried_action()
+        self.tried_actions.append(random_action)
         next_board = self.apply_move(random_action)
         child = Node(next_board, self.next_player(), parent_node=self, parent_action=random_action)
         self.children.append(child)
+        self.update_actions()
         return child
 
     def simulation(self) -> int:
@@ -151,7 +158,7 @@ class Node:
 
         current_state = self.board
         while check_end_state(current_state, self.player) == GameState.STILL_PLAYING:
-            random_action = self.get_random_action()
+            random_action = self.get_random_untried_action()
             current_state = self.apply_move(random_action)
         return self.final_points()
 
@@ -175,7 +182,7 @@ class Node:
         """
 
         current_node = self
-        while not current_node.is_last_child():
+        while not current_node.is_last_node():
             if not current_node.tried_all_actions():
                 return current_node.expand()
             else:

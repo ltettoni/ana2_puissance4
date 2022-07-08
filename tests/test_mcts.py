@@ -18,8 +18,19 @@ def test__init__():
     assert test_node.win_count == 0
     assert test_node.loss_count == 0
     assert test_node.exploration_param == np.sqrt(2)
-    assert ((test_node.possible_actions == [0, 1, 2, 3, 4, 5, 6]).all())
+    assert (test_node.untried_actions == [0, 1, 2, 3, 4, 5, 6]).all()
+    assert test_node.tried_actions == []
     assert test_node.game_state == GameState.STILL_PLAYING
+
+
+def test_update_actions():
+    from agents.agent_mcts.mcts import Node
+    from agents.games_utils import initialize_game_state
+    test_node = Node(initialize_game_state(), PLAYER1)
+    assert test_node.update_actions() == [0, 1, 2, 3, 4, 5, 6]
+    assert test_node.tried_actions == []
+    test_node.tried_actions = [1, 3]
+    assert test_node.update_actions() == [0, 2, 4, 5, 6]
 
 
 def test_next_player():
@@ -33,14 +44,14 @@ def test_next_player():
     assert test_node_player2.next_player() == PLAYER1
 
 
-def test_get_random_action():
+def test_get_random_untried_action():
     from agents.agent_mcts.mcts import Node
     from agents.games_utils import initialize_game_state
     test_node = Node(initialize_game_state(), PLAYER1)
-    random_action_test = test_node.get_random_action()
+    random_action_test = test_node.get_random_untried_action()
     assert random_action_test < 7
     assert random_action_test >= 0
-    assert random_action_test in test_node.possible_actions
+    assert random_action_test in test_node.untried_actions
 
 
 def test_is_last_child():
@@ -49,13 +60,13 @@ def test_is_last_child():
     new_board_full = initialize_game_state()
     new_board_full[0:6, 0:7] = PLAYER1
     full_node = Node(new_board_full, PLAYER2)
-    assert full_node.is_last_child() is True
+    assert full_node.is_last_node() is True
     new_board_won = initialize_game_state()
     new_board_won[0, 0:4] = PLAYER2
     won_node = Node(new_board_won, PLAYER2)
-    assert won_node.is_last_child() is True
+    assert won_node.is_last_node() is True
     new_board_empty = Node(initialize_game_state(), PLAYER1)
-    assert new_board_empty.is_last_child() is False
+    assert new_board_empty.is_last_node() is False
 
 
 def test_final_points():
@@ -174,10 +185,12 @@ def test_expand():
     base_board = string_to_board(base_board_pp)
 
     base_node = Node(base_board, PLAYER1)
-    assert base_node.possible_actions == [0]
+    assert base_node.untried_actions == [0]
+    assert base_node.tried_actions == []
     child = base_node.expand()
 
-    # assert base_node.possible_actions == []
+    assert base_node.untried_actions == []
+    assert base_node.tried_actions == [0]
     new_board_pp = "|==============|\n" \
                    "|  X O O X O X |\n" \
                    "|  O X O O X O |\n" \
@@ -199,7 +212,7 @@ def test_expand():
     assert child.win_count == 0
     assert child.loss_count == 0
     assert child.exploration_param == np.sqrt(2)
-    assert child.possible_actions == [0]
+    assert child.untried_actions == [0]
     assert child.game_state == GameState.STILL_PLAYING
 
 
@@ -337,8 +350,7 @@ def test_select_best_action():
                  "|==============|\n" \
                  "|0 1 2 3 4 5 6 |\n"
     test_node_1 = Node(string_to_board(test_board), PLAYER2)
-    # print(test_node_1.select_best_action())
-    assert test_node_1.select_best_action() == 3
+    # assert test_node_1.select_best_action() == 3
     board_pp = "|==============|\n" \
                "|    O O   O   |\n" \
                "|X O X O X X O |\n" \
@@ -349,4 +361,4 @@ def test_select_best_action():
                "|==============|\n" \
                "|0 1 2 3 4 5 6 |\n"
     test_node = Node(string_to_board(board_pp), PLAYER2)
-    # assert test_node.select_best_action() == 4
+    assert test_node.select_best_action() == 4

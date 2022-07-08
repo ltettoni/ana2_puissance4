@@ -194,6 +194,7 @@ class Node:
         Selects the best action for the current board.
         Returns the most optimal action to play.
         """
+
         simulation_nb = 400
         for i in range(simulation_nb):
             new_node = self.select_node_for_simulation()

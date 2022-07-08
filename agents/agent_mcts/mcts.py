@@ -136,6 +136,7 @@ class Node:
         Expands the tree by creating a new node. It is randomly created from the current node.
         Returns the new node.
         """
+
         random_action = self.get_random_action()
         list(self.possible_actions).remove(random_action)
         next_board = self.apply_move(random_action)
@@ -144,14 +145,21 @@ class Node:
         return child
 
     def simulation(self) -> int:
-        current_state = self.board
+        """
+        Simulates a random playout from the current node and returns the result if that playout.
+        """
 
+        current_state = self.board
         while check_end_state(current_state, self.player) == GameState.STILL_PLAYING:
             random_action = self.get_random_action()
             current_state = self.apply_move(random_action)
         return self.final_points()
 
     def backpropagation(self, result) -> None:
+        """
+        Backpropagation of the result : update of current node and update of parent nodes.
+        """
+
         self.nb_visits += 1
         if result == -1:
             self.loss_count += 1
@@ -161,8 +169,12 @@ class Node:
             self.parent_node.backpropagation(result)
 
     def select_node_for_simulation(self) -> Node:
-        current_node = self
+        """
+        Selects a node to do a game simulation on.
+        Returns the chosen node. If the current node is at the end of the tree, we choose this one.
+        """
 
+        current_node = self
         while not current_node.is_last_child():
             if not current_node.tried_all_actions():
                 return current_node.expand()
@@ -171,10 +183,14 @@ class Node:
         return current_node
 
     def select_best_action(self) -> PlayerAction:
+        """
+        Selects the best action for the current board.
+        Returns the most optimal action to play.
+        """
         simulation_nb = 400
         for i in range(simulation_nb):
             new_node = self.select_node_for_simulation()
-            result = self.simulation()
+            result = new_node.simulation()
             new_node.backpropagation(result)
         child = self.best_child()
         action = child.parent_action

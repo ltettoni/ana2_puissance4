@@ -177,7 +177,7 @@ def test_expand():
     assert base_node.possible_actions == [0]
     child = base_node.expand()
 
-    assert base_node.possible_actions == []
+    # assert base_node.possible_actions == []
     new_board_pp = "|==============|\n" \
                    "|  X O O X O X |\n" \
                    "|  O X O O X O |\n" \
@@ -288,11 +288,9 @@ def test_backpropagation():
     assert test_node_parent.loss_count == 1
 
 
-
-
 def test_select_node_for_simulation():
     from agents.agent_mcts.mcts import Node
-    from agents.games_utils import initialize_game_state, string_to_board
+    from agents.games_utils import string_to_board
     board_pp = "|==============|\n" \
                "|  X X O X O O |\n" \
                "|O O X O O X O |\n" \

@@ -88,7 +88,7 @@ def test_final_points():
                    "|==============|\n" \
                    "|0 1 2 3 4 5 6 |\n"
     tie_node = Node(string_to_board(board_tie_pp), PLAYER1)
-    assert tie_node.final_points() == 0
+    assert tie_node.final_points() == -1000
     empty_node = Node(initialize_game_state(), PLAYER1)
     assert empty_node.final_points() == 0
 
@@ -98,7 +98,7 @@ def test_apply_move():
     from agents.games_utils import string_to_board, initialize_game_state
     test_node_empty = Node(initialize_game_state(), PLAYER1)
 
-    test_node_empty.apply_move(0)
+    new_board = test_node_empty.apply_move(0)
     board_after_move = "|==============|\n" \
                        "|              |\n" \
                        "|              |\n" \
@@ -109,10 +109,11 @@ def test_apply_move():
                        "|==============|\n" \
                        "|0 1 2 3 4 5 6 |\n"
     test_board = string_to_board(board_after_move)
-    assert ((test_node_empty.board == test_board).all())
+    assert ((new_board == test_board).all())
     test_board[0][6] = PLAYER1
-    test_node_empty.apply_move(6)
-    assert ((test_node_empty.board == test_board).all())
+    new_node = Node(new_board, PLAYER1)
+    test_board_2 = new_node.apply_move(6)
+    assert ((test_board_2 == test_board).all())
     with pytest.raises(ValueError):
         test_node_empty.apply_move(8)
 
@@ -256,7 +257,7 @@ def test_simulation():
                  "|0 1 2 3 4 5 6 |\n"
     test_node_3 = Node(string_to_board(board_pp_3), PLAYER1)
     # will end up in a tie, no way for player 1 to win
-    assert test_node_3.simulation() == 0
+    assert test_node_3.simulation() == -1000
 
 
 def test_backpropagation():
@@ -334,7 +335,7 @@ def test_select_node_for_simulation():
     assert node_selected.nb_visits == 0
     assert node_selected.win_count == 0
     assert node_selected.loss_count == 0
-    assert node_selected.game_state == GameState.IS_DRAW
+    assert node_selected.game_state == GameState.IS_LOST
 
 
 def test_select_best_action():
@@ -361,4 +362,4 @@ def test_select_best_action():
                "|==============|\n" \
                "|0 1 2 3 4 5 6 |\n"
     test_node = Node(string_to_board(board_pp), PLAYER2)
-    # assert test_node.select_best_action() == 4
+    assert test_node.select_best_action() == 4

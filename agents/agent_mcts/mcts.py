@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from numpy import math
 from agents.games_utils import BoardPiece, PlayerAction, apply_player_action, PLAYER1, PLAYER2, \
-    check_end_state, GameState, Optional, SavedState, Tuple
+    check_end_state, GameState, Optional, SavedState, Tuple, pretty_print_board
 from agents.agent_random.random import legal_actions
 
 
@@ -29,7 +29,7 @@ class Node:
         """
         Constructor function for the class Node
         """
-
+        print("je construis un node")
         self.board: np.ndarray = board
         self.player: BoardPiece = player
         self.parent_node: Node = parent_node
@@ -45,6 +45,7 @@ class Node:
         return
 
     def update_actions(self) -> list[PlayerAction]:
+        print("j'update les actions essayées et pas essayées pour ce node")
         possible_actions = legal_actions(self.board)
         self.untried_actions = [action for action in possible_actions if action not in self.tried_actions]
         self.tried_actions = [action.parent_action for action in self.children]
@@ -54,17 +55,18 @@ class Node:
         """
         Returns the next (or previous) player.
         """
-
+        print("je recherche quel est le prochain joueur")
         return PLAYER1 if self.player == PLAYER2 else PLAYER2
 
     def get_random_untried_action(self) -> PlayerAction:
         """
         Returns a random column to play in, out of the available ones
         """
-
+        print("je produis une action random pas encore essayée")
         self.update_actions()
         random_number = np.random.randint(0, len(self.untried_actions))
         random_action = self.untried_actions[random_number]
+        print("c'est l'action : " + str(random_action))
         return np.int8(random_action)
 
     def is_last_node(self) -> bool:
@@ -72,17 +74,19 @@ class Node:
         Returns true if the current node is at the end of the tree.
         Returns false if the current node can still be expanded.
         """
-
+        print("je me demande si ce node est le dernier de l'arbre : " + pretty_print_board(self.board))
         # update game state
         self.game_state = check_end_state(self.board, self.player)
-        return self.game_state != GameState.STILL_PLAYING
+        last_node = self.game_state != GameState.STILL_PLAYING
+        print("réponse last node : " + str(last_node))
+        return last_node
 
     def final_points(self) -> int:
         """
         Returns the result of the node : -1 if the game is lost to the other player,
         0 if the game is still playing or ends in a draw and 1 if the game is won.
         """
-
+        print("je compute le résultat de ce node")
         result = 0
         # find out if other player has won
         end_state_other_player = check_end_state(self.board, self.next_player())
@@ -91,12 +95,15 @@ class Node:
         if end_state_other_player == GameState.IS_WIN:
             # -1 if the other player wins and we lose
             result = -1
-        elif self.game_state == GameState.STILL_PLAYING or self.game_state == GameState.IS_DRAW:
+        elif self.game_state == GameState.STILL_PLAYING:
             # 0 if draw or game still on
             result = 0
+        elif self.game_state == GameState.IS_DRAW:
+            result = -1000
         elif self.game_state == GameState.IS_WIN:
             # 1 if the current player wins
             result = 1
+        print("résultat = " + str(result))
         return result
 
     def apply_move(self, action) -> np.ndarray:
@@ -105,7 +112,7 @@ class Node:
         Returns the board after modification.
         :param action: column to be played in
         """
-
+        print("je met une pièce dans la colonne suivante :" + str(action))
         self.board = apply_player_action(self.board, action, self.player)
         return self.board
 
@@ -114,15 +121,17 @@ class Node:
         Returns true if we tried all actions available.
         Returns false if there are still actions to be tried
         """
-
+        print("je me demande si j'ai essayé toutes les actions")
         self.update_actions()
-        return len(self.untried_actions) == 0
+        tried_all = (len(self.untried_actions) == 0)
+        print("réponse tt essayé: " + str(tried_all))
+        return tried_all
 
     def ucb1(self) -> float:
         """
         Returns the result of the upper confidence bound 1 formula for this node.
         """
-
+        print("je compute le score ucb1 de ce node")
         if self.nb_visits == 0 or self.parent_node.nb_visits == 0:
             raise ValueError
         expectation = float(self.win_count) / float(self.nb_visits)
@@ -133,16 +142,18 @@ class Node:
         """
         Returns the child that has the best ucb1 score out of all the node's children.
         """
-
+        print("je cherche mon best enfant")
         children_ucb1 = [child.ucb1() for child in self.children]
-        return self.children[np.argmax(children_ucb1)]
+        best_child = self.children[np.argmax(children_ucb1)]
+        print("et c'est avec l'action : " + str(best_child.parent_action))
+        return best_child
 
     def expand(self) -> Node:
         """
         Expands the tree by creating a new node. It is randomly created from the current node.
         Returns the new node.
         """
-
+        print("j'expand ce node : board :" + pretty_print_board(self.board))
         random_action = self.get_random_untried_action()
         self.tried_actions.append(random_action)
         next_board = self.apply_move(random_action)
@@ -155,18 +166,21 @@ class Node:
         """
         Simulates a random playout from the current node and returns the result if that playout.
         """
-
+        print("je simule un résultat pour ce node")
         current_state = self.board
-        while check_end_state(current_state, self.player) == GameState.STILL_PLAYING:
+        while check_end_state(current_state, self.player) == GameState.STILL_PLAYING \
+                and check_end_state(current_state, self.next_player()) == GameState.STILL_PLAYING:
             random_action = self.get_random_untried_action()
             current_state = self.apply_move(random_action)
-        return self.final_points()
+        final_points = self.final_points()
+        print("le résultat de cette simulation : " + str(final_points))
+        return final_points
 
     def backpropagation(self, result) -> None:
         """
         Backpropagation of the result : update of current node and update of parent nodes.
         """
-
+        print("je backpropagate un résultat de : " + str(result))
         self.nb_visits += 1
         if result == -1:
             self.loss_count += 1
@@ -174,19 +188,21 @@ class Node:
             self.win_count += 1
         if self.parent_node is not None:
             self.parent_node.backpropagation(result)
+        print("j'ai backpropagate, mon score perso est : " + str(self.win_count))
 
     def select_node_for_simulation(self) -> Node:
         """
         Selects a node to do a game simulation on.
         Returns the chosen node. If the current node is at the end of the tree, we choose this one.
         """
-
+        print("je select une node a simuler")
         current_node = self
         while not current_node.is_last_node():
             if not current_node.tried_all_actions():
                 return current_node.expand()
             else:
                 current_node = current_node.best_child()
+        print("board de la node selectionnée : " + pretty_print_board(current_node.board))
         return current_node
 
     def select_best_action(self) -> PlayerAction:
@@ -194,14 +210,25 @@ class Node:
         Selects the best action for the current board.
         Returns the most optimal action to play.
         """
-
-        simulation_nb = 400
+        print("je cherche la meilleure action")
+        simulation_nb = 100
         for i in range(simulation_nb):
             new_node = self.select_node_for_simulation()
             result = new_node.simulation()
             new_node.backpropagation(result)
-        child = self.best_child()
-        action = child.parent_action
+        best_child = self.best_child()
+        action = best_child.parent_action
+        print("meilleure action : " + str(action))
+        print("arbre de merde qui m'a permis de prendre cette décision : ")
+        print("ceci est l'arbre : " + pretty_print_board(self.board))
+        for i in self.children:
+            print(pretty_print_board(i.board))
+            for j in i.children:
+                print(pretty_print_board(j.board))
+                for k in j.children:
+                    print(pretty_print_board(k.board))
+                    for a in k.children:
+                        print(pretty_print_board(a.board))
         return action
 
 

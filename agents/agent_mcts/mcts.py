@@ -244,9 +244,20 @@ class Node:
         return action
 
     def display_node(self):
-        print("level=" + str(self.level) + ", action=" + str(self.parent_action) + ", score=" + str(self.win_count) + "/" +
+        print("level=" + str(self.level) + ", action=" + str(self.parent_action) + ", actionToHere=" + self.actions_to_here() + " score=" + str(self.win_count) + "/" +
               str(self.nb_visits) + ", joueurSuivant=" + str(self.player))
         print(pretty_print_board(self.board))
+
+    def actions_to_here(self):
+        acc: str = ""
+        running = self
+        while running is not None:
+            acc = str(running.parent_action) + acc
+            running = running.parent_node
+        return acc.removeprefix("None")
+
+
+    # DISPLAY THE TREE
 
     # Recursive depth-first is not ideal to represent the tree
     def display_tree(self, max_depth: int, depth: int) -> None:
@@ -257,12 +268,14 @@ class Node:
         for child in self.children:
             child.display_tree(max_depth, depth + 1)
 
+    # Only display nodes at a given level, starting with decounter=1
     def display_tree_at_level(self, decounter: int) -> None:
         if decounter == 1:
             self.display_node()
         for child in self.children:
             child.display_tree_at_level(decounter-1)
 
+    # Breadth first display (root node, then all level 2, then all level 3, etc)
     def display_full_tree(self) -> None:
         print("\n------------------------ FULL TREE ------------------------")
         for level in range(1, 10):

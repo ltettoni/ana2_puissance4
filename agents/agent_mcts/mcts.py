@@ -56,8 +56,8 @@ class Node:
     def update_actions(self) -> list[PlayerAction]:
         # print("j'update les actions essayées et pas essayées pour ce node")
         possible_actions = legal_actions(self.board)
+        self.tried_actions = [children.parent_action for children in self.children]
         self.untried_actions = [action for action in possible_actions if action not in self.tried_actions]
-        self.tried_actions = [action.parent_action for action in self.children]
         return self.untried_actions
 
     def next_player(self) -> np.int8:
@@ -157,6 +157,8 @@ class Node:
         children_ucb1 = [child.ucb1() for child in self.children]
         best_child = self.children[np.argmax(children_ucb1)]
         # print("et c'est avec l'action : " + str(best_child.parent_action))
+        for child in self.children:
+            score = child.win_count / child.nb_visits
         return best_child
 
     def expand(self) -> Node:
@@ -166,7 +168,7 @@ class Node:
         """
         # print("j'expand ce node : board :" + pretty_print_board(self.board))
         random_action = self.get_random_untried_action()
-        self.tried_actions.append(random_action)
+        # self.tried_actions.append(random_action)
         next_board = self.apply_move(random_action)
         child = Node(next_board, self.next_player(), parent_node=self, parent_action=random_action)
         self.children.append(child)
@@ -216,6 +218,7 @@ class Node:
         running_node = self
         while running_node.tried_all_actions():
             running_node = running_node.best_child()
+
         return running_node.expand()
 
     def select_best_action(self) -> PlayerAction:
@@ -234,7 +237,7 @@ class Node:
         print("---------------------------------")
         print("---------------------------------")
         print("---------------------------------")
-        self.display_tree(5, 1, 1)
+        self.display_tree(5, 1, 0)
 
         return action
 
@@ -242,8 +245,8 @@ class Node:
         # displays the tree machin
         if depth >= max_depth:
             return
-        counter = 1
-        print("niveau : " + str(depth) + " position " + str(curr_position) + " score : " + str(self.win_count) + "/" +
+        counter = 0
+        print("niveau: " + str(depth) + " joueur: " + str(self.player) + " action: " + str(self.parent_action) + " score: " + str(self.win_count) + "/" +
               str(self.nb_visits))
         print(pretty_print_board(self.board))
         for child in self.children:

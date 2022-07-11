@@ -43,7 +43,7 @@ class Node:
         self.board: np.ndarray = board
         self.player: BoardPiece = player
         self.parent_node: Node = parent_node
-        self.level:int = 1 if parent_node is None else parent_node.level + 1
+        self.level: int = 1 if parent_node is None else parent_node.level + 1
         self.parent_action: BoardPiece = parent_action
         self.children: list[Node] = []
         self.nb_visits: int = 0
@@ -218,10 +218,12 @@ class Node:
         Returns the chosen node. If the current node is at the end of the tree, we choose this one.
         """
         running_node = self
-        while running_node.tried_all_actions():
+        while running_node.tried_all_actions() and not running_node.game_is_over():
             running_node = running_node.best_child()
-
-        return running_node.expand()
+        if running_node.game_is_over():
+            return running_node
+        else:
+            return running_node.expand()
 
     def select_best_action(self) -> PlayerAction:
         """

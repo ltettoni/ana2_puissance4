@@ -234,12 +234,14 @@ class Node:
             new_node.backpropagation(result)
         best_child = self.best_child()
         action = best_child.parent_action
-        print("---------------------------------")
-        print("---------------------------------")
-        print("---------------------------------")
-        self.display_tree(5, 1, 0)
+
+        self.display_full_tree()
 
         return action
+
+    def display_full_tree(self) -> None:
+        print("\n------------------------ FULL TREE ------------------------")
+        self.display_tree(5, 1, 0)
 
     def display_tree(self, max_depth: int, depth: int, curr_position: int) -> None:
         # displays the tree machin

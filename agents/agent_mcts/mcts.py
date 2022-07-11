@@ -20,8 +20,9 @@ class Node:
     """
     A class used to represent a node in the game tree.
     Attributes :
+            level : depth in the tree - starts with 1
             board : the node's game board
-            player : the current player
+            player : the current player (will play the next round)
             parent_node : the parent node which lead to the current one, default is None
             parent_action : the action that lead to the current node, default is None
             children : possible children of this node
@@ -42,6 +43,7 @@ class Node:
         self.board: np.ndarray = board
         self.player: BoardPiece = player
         self.parent_node: Node = parent_node
+        self.level:int = 1 if parent_node is None else parent_node.level + 1
         self.parent_action: BoardPiece = parent_action
         self.children: list[Node] = []
         self.nb_visits: int = 0
@@ -239,21 +241,23 @@ class Node:
 
         return action
 
+
+
     def display_full_tree(self) -> None:
         print("\n------------------------ FULL TREE ------------------------")
-        self.display_tree(5, 1, 0)
+        self.display_tree(5, 1)
 
-    def display_tree(self, max_depth: int, depth: int, curr_position: int) -> None:
+
+
+    def display_tree(self, max_depth: int, depth: int) -> None:
         # displays the tree machin
         if depth >= max_depth:
             return
-        counter = 0
-        print("niveau=" + str(depth) + ", action=" + str(self.parent_action) + ", score=" + str(self.win_count) + "/" +
+        print("level=" + str(self.level) + ", action=" + str(self.parent_action) + ", score=" + str(self.win_count) + "/" +
               str(self.nb_visits) + ", joueurSuivant=" + str(self.player))
         print(pretty_print_board(self.board))
         for child in self.children:
-            child.display_tree(max_depth, depth + 1, counter)
-            counter += 1
+            child.display_tree(max_depth, depth + 1)
 
 
 def generate_move(board: np.ndarray, player: BoardPiece, saved_state: Optional[SavedState]) -> \

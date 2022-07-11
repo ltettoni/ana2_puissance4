@@ -83,12 +83,14 @@ class Node:
         Returns true if the current node is at the end of the tree.
         Returns false if the current node can still be expanded.
         """
-        # print("je me demande si ce node est le dernier de l'arbre : " + pretty_print_board(self.board))
+        last_node = len(self.children) == 0
+        return last_node
+
+    def game_is_over(self) -> bool:
         # update game state
         self.game_state = check_end_state(self.board, self.player)
-        last_node = self.game_state != GameState.STILL_PLAYING
-        # print("réponse last node : " + str(last_node))
-        return last_node
+        game_over = self.game_state != GameState.STILL_PLAYING
+        return game_over
 
     def final_points(self) -> int:
         """
@@ -173,17 +175,22 @@ class Node:
 
     def simulation(self) -> int:
         """
-        Simulates a random playout from the current node and returns the result if that playout.
+        Simulates a random playout from the current node and returns the result of that playout.
         """
         # print("je simule un résultat pour ce node")
-        current_state = self.board
-        new_node = Node(current_state, self.player)
-        while check_end_state(current_state, self.player) == GameState.STILL_PLAYING:
-            # random_action = self.get_random_untried_action()
-            random_action = get_random_legal_action(current_state)
-            current_state = new_node.apply_move(random_action)
-            new_node.board = current_state
-        final_points = new_node.final_points()
+        # print("board simulée : " + pretty_print_board(self.board))
+        # print("self.player = " + str(self.player))
+        current_board = self.board
+        running_node = Node(current_board, self.player)
+        while check_end_state(current_board, running_node.player) == GameState.STILL_PLAYING:
+            random_action = get_random_legal_action(current_board)
+            current_board = running_node.apply_move(random_action)
+            # print("Joueur : " + str(running_node.player) + " a joué dans la colonne : " + str(random_action))
+            running_node.board = current_board
+            running_node.player = running_node.next_player()
+        running_node.player = self.player
+        final_points = running_node.final_points()
+        # print("le board ce cette simulation : " + pretty_print_board(running_node.board))
         # print("le résultat de cette simulation : " + str(final_points))
         return final_points
 
@@ -198,7 +205,7 @@ class Node:
         elif result == 1:
             self.win_count += 1
         if self.parent_node is not None:
-            self.parent_node.backpropagation(result)
+            self.parent_node.backpropagation(result * (-1))
         # print("j'ai backpropagate, mon score perso est : " + str(self.win_count))
 
     def select_node_for_simulation(self) -> Node:
@@ -206,15 +213,10 @@ class Node:
         Selects a node to do a game simulation on.
         Returns the chosen node. If the current node is at the end of the tree, we choose this one.
         """
-        # print("je select une node a simuler")
-        current_node = self
-        while not current_node.is_last_node():
-            if not current_node.tried_all_actions():
-                return current_node.expand()
-            else:
-                current_node = current_node.best_child()
-        # print("board de la node selectionnée : " + pretty_print_board(current_node.board))
-        return current_node
+        running_node = self
+        while running_node.tried_all_actions():
+            running_node = running_node.best_child()
+        return running_node.expand()
 
     def select_best_action(self) -> PlayerAction:
         """
@@ -229,22 +231,23 @@ class Node:
             new_node.backpropagation(result)
         best_child = self.best_child()
         action = best_child.parent_action
-        print("meilleure action : " + str(action))
-        print("arbre de merde qui m'a permis de prendre cette décision : ")
-        print("ceci est l'arbre : " + pretty_print_board(self.board))
-        for i in self.children:
-            print("étage 1 des enfants :")
-            print(pretty_print_board(i.board))
-            for j in i.children:
-                print("étage 2 des enfants :")
-                print(pretty_print_board(j.board))
-                for k in j.children:
-                    print("étage 3 des enfants :")
-                    print(pretty_print_board(k.board))
-                    for a in k.children:
-                        print("étage 4 des enfants :")
-                        print(pretty_print_board(a.board))
+        print("---------------------------------")
+        print("---------------------------------")
+        print("---------------------------------")
+        self.display_tree(5, 1, 1)
+
         return action
+
+    def display_tree(self, max_depth: int, depth: int, curr_position: int) -> None:
+        if depth >= max_depth:
+            return
+        counter = 1
+        print("niveau : " + str(depth) + " position " + str(curr_position) + " score : " + str(self.win_count) + "/" +
+              str(self.nb_visits))
+        print(pretty_print_board(self.board))
+        for child in self.children:
+            child.display_tree(max_depth, depth + 1, counter)
+            counter += 1
 
 
 def generate_move(board: np.ndarray, player: BoardPiece, saved_state: Optional[SavedState]) -> \

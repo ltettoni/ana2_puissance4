@@ -246,8 +246,8 @@ class Node:
         if depth >= max_depth:
             return
         counter = 0
-        print("niveau: " + str(depth) + " joueur: " + str(self.player) + " action: " + str(self.parent_action) + " score: " + str(self.win_count) + "/" +
-              str(self.nb_visits))
+        print("niveau=" + str(depth) + ", action=" + str(self.parent_action) + ", score=" + str(self.win_count) + "/" +
+              str(self.nb_visits) + ", joueurSuivant=" + str(self.player))
         print(pretty_print_board(self.board))
         for child in self.children:
             child.display_tree(max_depth, depth + 1, counter)

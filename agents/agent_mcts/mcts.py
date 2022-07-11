@@ -243,14 +243,12 @@ class Node:
 
         return action
 
-
-
     def display_full_tree(self) -> None:
         print("\n------------------------ FULL TREE ------------------------")
-        self.display_tree(5, 1)
+        for level in range(1, 10):
+            self.display_tree_at_level(level)
 
-
-
+    # Recursive depth-first is not ideal to represent the tree
     def display_tree(self, max_depth: int, depth: int) -> None:
         # displays the tree machin
         if depth >= max_depth:
@@ -261,6 +259,13 @@ class Node:
         for child in self.children:
             child.display_tree(max_depth, depth + 1)
 
+    def display_tree_at_level(self, decounter: int) -> None:
+        if decounter == 1:
+            print("level=" + str(self.level) + ", action=" + str(self.parent_action) + ", score=" + str(self.win_count) + "/" +
+                str(self.nb_visits) + ", joueurSuivant=" + str(self.player))
+            print(pretty_print_board(self.board))
+        for child in self.children:
+            child.display_tree_at_level(decounter-1)
 
 def generate_move(board: np.ndarray, player: BoardPiece, saved_state: Optional[SavedState]) -> \
         Tuple[PlayerAction, Optional[SavedState]]:

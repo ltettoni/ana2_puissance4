@@ -239,6 +239,7 @@ class Node:
         return action
 
     def display_tree(self, max_depth: int, depth: int, curr_position: int) -> None:
+        # displays the tree machin
         if depth >= max_depth:
             return
         counter = 1

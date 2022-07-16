@@ -155,13 +155,26 @@ class Node:
         """
         Returns the child that has the best ucb1 score out of all the node's children.
         """
-        # print("je cherche mon best enfant")
         children_ucb1 = [child.ucb1() for child in self.children]
         best_child = self.children[np.argmax(children_ucb1)]
-        # print("et c'est avec l'action : " + str(best_child.parent_action))
-        for child in self.children:
-            score = child.win_count / child.nb_visits
         return best_child
+
+    def ucb1_alt(self) -> float:
+        """
+        Returns the result of the upper confidence bound 1 formula for this node.
+        """
+        # print("je compute le score ucb1 de ce node")
+        if self.nb_visits == 0 or self.parent_node.nb_visits == 0:
+            raise ValueError
+        expectation = float(self.loss_count) / float(self.nb_visits)
+        exploration = self.exploration_param * np.sqrt(np.log(self.parent_node.nb_visits) / self.nb_visits)
+        return expectation + exploration
+
+    def best_child_for_root(self) -> Node:
+
+        children_ucb1_alt = [child.ucb1_alt() for child in self.children]
+        best_child_alt = self.children[np.argmax(children_ucb1_alt)]
+        return best_child_alt
 
     def expand(self) -> Node:
         """
@@ -231,15 +244,16 @@ class Node:
         Returns the most optimal action to play.
         """
         # print("je cherche la meilleure action")
-        simulation_nb = 100
+        simulation_nb = 500
         for i in range(simulation_nb):
             new_node = self.select_node_for_simulation()
             result = new_node.simulation()
             new_node.backpropagation(result)
-        best_child = self.best_child()
+        #best_child = self.best_child()
+        best_child = self.best_child_for_root()
         action = best_child.parent_action
 
-        self.display_full_tree()
+        # self.display_full_tree()
 
         return action
 

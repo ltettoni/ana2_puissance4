@@ -365,4 +365,4 @@ def test_select_best_action():
                "|==============|\n" \
                "|0 1 2 3 4 5 6 |\n"
     test_node = Node(string_to_board(board_pp), PLAYER2)
-    # assert test_node.select_best_action() == 4
+    assert test_node.select_best_action() == 4

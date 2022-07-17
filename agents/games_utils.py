@@ -153,10 +153,27 @@ def connected_four(board: np.ndarray, player: BoardPiece) -> bool:
     """
 
     win_line = check_lines(board, player)
-    win_col = check_lines(np.transpose(board), player)
+    # win_col = check_lines(np.transpose(board), player)
+    win_col = check_columns(board, player)
     win_diagonal1 = check_diagonals(board, player)
     win_diagonal2 = check_diagonals(np.fliplr(board), player)
     is_connected = win_line or win_col or win_diagonal1 or win_diagonal2
+    return is_connected
+
+
+def check_columns(board: np.ndarray, player: BoardPiece) -> bool:
+    """
+    Checks if the lines of the given board contain a winning connected line of 4 pieces.
+    """
+
+    is_connected = False
+    # check all lines
+    for row in range(NB_ROWS - 3):
+        for col in range(NB_COLS):
+            if board[row][col] == player and board[row + 1][col] == player and board[row + 2][col] == player \
+                    and board[row + 3][col] == player:
+                is_connected = True
+                break
     return is_connected
 
 
@@ -169,7 +186,9 @@ def check_lines(board: np.ndarray, player: BoardPiece) -> bool:
     # check all lines
     for row in range(NB_ROWS):
         for col in range(NB_COLS - 3):
-            if (board[row, col: col + CONNECT_N] == player).all():
+            # if (board[row, col: col + CONNECT_N] == player).all():
+            if board[row][col] == player and board[row][col + 1] == player and board[row][col + 2] == player \
+                    and board[row][col + 3] == player:
                 is_connected = True
                 break
     return is_connected

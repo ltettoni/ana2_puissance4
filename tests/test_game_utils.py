@@ -161,7 +161,7 @@ def test_connected_four():
 
 def test_check_end_state():
     from agents.games_utils import check_end_state
-    from agents.games_utils import initialize_game_state
+    from agents.games_utils import initialize_game_state, string_to_board
     ret = initialize_game_state()
 
     assert GameState.STILL_PLAYING == check_end_state(ret, PLAYER1)
@@ -178,6 +178,17 @@ def test_check_end_state():
     ret.fill(PLAYER1)
     assert GameState.IS_WIN == check_end_state(ret, PLAYER1)
 
+    bug_board = "|==============|\n" \
+                "|      X       |\n" \
+                "|      X       |\n" \
+                "|      X       |\n" \
+                "|    O O       |\n" \
+                "|    O X       |\n" \
+                "|  O X O X     |\n" \
+                "|==============|\n" \
+                "|0 1 2 3 4 5 6 |"
+
+    assert GameState.STILL_PLAYING == check_end_state(string_to_board(bug_board), PLAYER1)
 
 def test_check_board_full():
     from agents.games_utils import check_board_full

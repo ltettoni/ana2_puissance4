@@ -4,7 +4,7 @@ import numpy as np
 from numpy import math
 
 from agents.games_utils import BoardPiece, PlayerAction, apply_player_action, PLAYER1, PLAYER2, \
-    check_end_state, GameState, Optional, SavedState, Tuple, pretty_print_board
+    check_end_state, GameState, Optional, SavedState, Tuple, pretty_print_board, initialize_game_state
 from agents.agent_random.random import legal_actions
 
 
@@ -197,6 +197,7 @@ class Node:
         while running_node.tried_all_actions() and not running_node.game_is_over():
             # go down and choose the best child
             running_node = running_node.best_child()
+            # running_node = running_node.best_child_alternative()
         if running_node.game_is_over():
             return running_node
         else:
@@ -328,6 +329,10 @@ def generate_move(board: np.ndarray, player: BoardPiece, saved_state: Optional[S
     """
     Generates the best move for the current board.
     """
-    root = Node(board, player)
-    action = root.select_best_action()
+    # force 1st move in column 3 because it's the best move possible
+    if (board == initialize_game_state()).all():
+        action = 3
+    else:
+        root = Node(board, player)
+        action = root.select_best_action()
     return np.int8(action), saved_state

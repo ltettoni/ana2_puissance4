@@ -372,7 +372,7 @@ def test_select_best_action():
     test_node_1 = Node(string_to_board(test_board), PLAYER2)
     assert test_node_1.select_best_action() == 3
     board_pp = "|==============|\n" \
-               "|    O O   O   |\n" \
+               "|    O O   O O |\n" \
                "|X O X O X X O |\n" \
                "|O O O X O X X |\n" \
                "|O X O X O X O |\n" \

@@ -49,7 +49,7 @@ def human_vs_agent(
                     print(pretty_print_board(board))
                     if end_state == GameState.IS_DRAW:
                         print("Game ended in draw")
-                    else:
+                    elif end_state == GameState.IS_WIN:
                         print(
                             f'{player_name} won playing {PLAYER1_PRINT if player == PLAYER1 else PLAYER2_PRINT}'
                         )

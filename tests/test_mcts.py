@@ -59,22 +59,6 @@ def test_get_random_untried_action():
     assert random_action_test in test_node.untried_actions
 
 
-def test_is_last_node():
-    from agents.agent_mcts.mcts import Node
-    from agents.games_utils import initialize_game_state
-    new_board_full = initialize_game_state()
-    new_board_full[0:6, 0:7] = PLAYER1
-    full_node = Node(new_board_full, PLAYER2)
-    assert full_node.is_last_node() is True
-    new_board_won = initialize_game_state()
-    new_board_won[0, 0:4] = PLAYER2
-    won_node = Node(new_board_won, PLAYER2)
-    assert won_node.is_last_node() is True
-    new_board_empty = Node(initialize_game_state(), PLAYER1)
-    new_board_empty.children.append(won_node)
-    assert new_board_empty.is_last_node() is False
-
-
 def test_game_is_over():
     from agents.agent_mcts.mcts import Node
     from agents.games_utils import initialize_game_state
@@ -372,8 +356,8 @@ def test_select_best_action():
     test_node_1 = Node(string_to_board(test_board), PLAYER2)
     assert test_node_1.select_best_action() == 3
     board_pp = "|==============|\n" \
-               "|    O O   O O |\n" \
-               "|X O X O X X O |\n" \
+               "|    X O   O O |\n" \
+               "|X X X O O X O |\n" \
                "|O O O X O X X |\n" \
                "|O X O X O X O |\n" \
                "|O O X X X O X |\n" \

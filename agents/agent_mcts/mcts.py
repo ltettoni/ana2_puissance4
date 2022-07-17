@@ -77,14 +77,6 @@ class Node:
         random_action = self.untried_actions[random_number]
         return np.int8(random_action)
 
-    def is_last_node(self) -> bool:
-        """
-        Returns true if the current node is at the end of the tree, which means it has no children and can be expanded.
-        Returns false if it is has children and thus is not at the end of the tree.
-        """
-
-        return len(self.children) == 0
-
     def game_is_over(self) -> bool:
         """
         Updates the game state and returns true if the game is over.
@@ -197,7 +189,6 @@ class Node:
         while running_node.tried_all_actions() and not running_node.game_is_over():
             # go down and choose the best child
             running_node = running_node.best_child()
-            # running_node = running_node.best_child_alternative()
         if running_node.game_is_over():
             return running_node
         else:
@@ -258,7 +249,7 @@ class Node:
         Returns the most optimal action to play.
         """
 
-        simulation_nb = 500
+        simulation_nb = 1500
         for simulation in range(simulation_nb):
             new_node = self.select_node_for_simulation()
             result = new_node.simulation()

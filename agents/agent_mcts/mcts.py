@@ -55,7 +55,7 @@ class Node:
         Returns the list of untried actions.
         """
         possible_actions = legal_actions(self.board)
-        self.tried_actions = [children.parent_action for children in self.children]
+        self.tried_actions = [child.parent_action for child in self.children]
         self.untried_actions = [action for action in possible_actions if action not in self.tried_actions]
         return self.untried_actions
 

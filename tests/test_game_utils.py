@@ -197,3 +197,7 @@ def test_check_board_full():
     assert not check_board_full(board)
     board.fill(PLAYER1)
     assert check_board_full(board)
+    board.fill(PLAYER2)
+    assert check_board_full(board)
+    board.fill(NO_PLAYER)
+    assert not check_board_full(board)

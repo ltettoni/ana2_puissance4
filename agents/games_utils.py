@@ -17,7 +17,7 @@ PlayerAction = np.int8  # The column to be played
 
 NB_ROWS = 6  # number of rows in board
 NB_COLS = 7  # number of columns in board
-TOP_BOARD = 5  # row at the top of the board
+TOP_BOARD = NB_ROWS - 1  # row at the top of the board
 
 NB_ROWS_PP = 9  # number of rows in printed board (borders included)
 NB_COLS_PP = 17  # number of columns in printed board (borders, spaces and line break included)
@@ -137,11 +137,12 @@ def apply_player_action(board: np.ndarray, action: PlayerAction, player: BoardPi
     back or copied beforehand).
     """
 
-    final_board = board.copy()
     if action >= NB_COLS or board[TOP_BOARD][action] != NO_PLAYER:
         raise ValueError
 
     open_row = min(np.argwhere(board[:, action] == NO_PLAYER).flatten())
+
+    final_board = board.copy()
     final_board[open_row][action] = player
     return final_board
 
@@ -152,13 +153,15 @@ def connected_four(board: np.ndarray, player: BoardPiece) -> bool:
     in either a horizontal, vertical, or diagonal line. Returns False otherwise.
     """
 
-    win_line = check_lines(board, player)
-    # win_col = check_lines(np.transpose(board), player)
-    win_col = check_columns(board, player)
-    win_diagonal1 = check_diagonals(board, player)
-    win_diagonal2 = check_diagonals(np.fliplr(board), player)
-    is_connected = win_line or win_col or win_diagonal1 or win_diagonal2
-    return is_connected
+    if check_lines(board, player):
+        return True
+    if check_columns(board, player):
+        return True
+    if check_diagonals(board, player):  # ascending diagonals
+        return True
+    if check_diagonals(np.fliplr(board), player):  # descending diagonals
+        return True
+    return False
 
 
 def check_columns(board: np.ndarray, player: BoardPiece) -> bool:
@@ -166,15 +169,15 @@ def check_columns(board: np.ndarray, player: BoardPiece) -> bool:
     Checks if the lines of the given board contain a winning connected line of 4 pieces.
     """
 
-    is_connected = False
-    # check all lines
-    for row in range(NB_ROWS - 3):
+    for row in range(NB_ROWS - (CONNECT_N - 1)):
         for col in range(NB_COLS):
-            if board[row][col] == player and board[row + 1][col] == player and board[row + 2][col] == player \
-                    and board[row + 3][col] == player:
-                is_connected = True
-                break
-    return is_connected
+            consecutive = True
+            for incr in range(CONNECT_N):
+                if board[row + incr][col] != player:
+                    consecutive = False
+                    break
+            if consecutive: return True
+    return False
 
 
 def check_lines(board: np.ndarray, player: BoardPiece) -> bool:
@@ -182,30 +185,30 @@ def check_lines(board: np.ndarray, player: BoardPiece) -> bool:
     Checks if the lines of the given board contain a winning connected line of 4 pieces.
     """
 
-    is_connected = False
-    # check all lines
     for row in range(NB_ROWS):
-        for col in range(NB_COLS - 3):
-            # if (board[row, col: col + CONNECT_N] == player).all():
-            if board[row][col] == player and board[row][col + 1] == player and board[row][col + 2] == player \
-                    and board[row][col + 3] == player:
-                is_connected = True
-                break
-    return is_connected
+        for col in range(NB_COLS - (CONNECT_N - 1)):
+            consecutive = True
+            for incr in range(CONNECT_N):
+                if board[row][col+incr] != player:
+                    consecutive = False
+                    break
+            if consecutive: return True
+    return False
 
 
 def check_diagonals(board: np.ndarray, player: BoardPiece) -> bool:
     """
     Checks if the diagonals of the given board contain a winning connected diagonal of 4 pieces.
     """
-    is_connected = False
-    for row in range(NB_ROWS - 3):
-        for col in range(NB_COLS - 3):
-            if board[row][col] == player and board[row + 1][col + 1] == player and board[row + 2][col + 2] == player \
-                    and board[row + 3][col + 3] == player:
-                is_connected = True
-                break
-    return is_connected
+    for row in range(NB_ROWS - (CONNECT_N - 1)):
+        for col in range(NB_COLS - (CONNECT_N - 1)):
+            consecutive = True
+            for incr in range(CONNECT_N):
+                if board[row+incr][col+incr] != player:
+                    consecutive = False
+                    break
+            if consecutive: return True
+    return False
 
 
 def check_board_full(board: np.ndarray) -> bool:
@@ -226,10 +229,11 @@ def check_end_state(board: np.ndarray, player: BoardPiece) -> GameState:
     or is play still on-going (GameState.STILL_PLAYING)?
     """
 
-    game = GameState.STILL_PLAYING
-
-    if check_board_full(board):
-        game = GameState.IS_DRAW
+    # Check the most likely situation first
     if connected_four(board, player):
-        game = GameState.IS_WIN
-    return game
+        return GameState.IS_WIN
+    # Then a full board
+    if check_board_full(board):
+        return GameState.IS_DRAW
+    # Otherwise, we are still playing
+    return GameState.STILL_PLAYING

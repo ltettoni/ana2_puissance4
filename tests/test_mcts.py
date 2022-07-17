@@ -12,6 +12,7 @@ def test__init__():
     assert ((test_node.board == blank_board).all())
     assert test_node.player == PLAYER1
     assert test_node.parent_node is None
+    assert test_node.level == 1
     assert test_node.parent_action is None
     assert test_node.children == list()
     assert test_node.nb_visits == 0
@@ -29,6 +30,10 @@ def test_update_actions():
     test_node = Node(initialize_game_state(), PLAYER1)
     assert test_node.update_actions() == [0, 1, 2, 3, 4, 5, 6]
     assert test_node.tried_actions == []
+    child_1 = Node(initialize_game_state(), PLAYER2, parent_node=test_node, parent_action=np.int8(1))
+    test_node.children.append(child_1)
+    child_3 = Node(initialize_game_state(), PLAYER2, parent_node=test_node, parent_action=np.int8(3))
+    test_node.children.append(child_3)
     test_node.tried_actions = [1, 3]
     assert test_node.update_actions() == [0, 2, 4, 5, 6]
 
@@ -70,6 +75,17 @@ def test_is_last_node():
     assert new_board_empty.is_last_node() is False
 
 
+def test_game_is_over():
+    from agents.agent_mcts.mcts import Node
+    from agents.games_utils import initialize_game_state
+    test_node = Node(initialize_game_state(), PLAYER1)
+    assert test_node.game_is_over() is False
+    new_board_full = initialize_game_state()
+    new_board_full[0:6, 0:7] = PLAYER1
+    test_node_full = Node(new_board_full, PLAYER2)
+    assert test_node_full.game_is_over() is True
+
+
 def test_final_points():
     from agents.agent_mcts.mcts import Node
     from agents.games_utils import initialize_game_state, string_to_board
@@ -89,7 +105,7 @@ def test_final_points():
                    "|==============|\n" \
                    "|0 1 2 3 4 5 6 |\n"
     tie_node = Node(string_to_board(board_tie_pp), PLAYER1)
-    assert tie_node.final_points() == -1000
+    assert tie_node.final_points() == 0
     empty_node = Node(initialize_game_state(), PLAYER1)
     assert empty_node.final_points() == 0
 
@@ -171,6 +187,42 @@ def test_best_child():
     assert test_node.best_child() == test_node_child3
 
 
+def test_select_node_for_simulation():
+    from agents.agent_mcts.mcts import Node
+    from agents.games_utils import string_to_board
+    board_pp = "|==============|\n" \
+               "|  X X O X O O |\n" \
+               "|O O X O O X O |\n" \
+               "|O O O X O X X |\n" \
+               "|O X O X O X O |\n" \
+               "|X O X X X O X |\n" \
+               "|X X X O X X O |\n" \
+               "|==============|\n" \
+               "|0 1 2 3 4 5 6 |\n"
+    test_node_full = Node(string_to_board(board_pp), PLAYER2)
+    # select_node should expand the previous board and return this new board
+    board_pp_after_simulation = "|==============|\n" \
+                                "|O X X O X O O |\n" \
+                                "|O O X O O X O |\n" \
+                                "|O O O X O X X |\n" \
+                                "|O X O X O X O |\n" \
+                                "|X O X X X O X |\n" \
+                                "|X X X O X X O |\n" \
+                                "|==============|\n" \
+                                "|0 1 2 3 4 5 6 |\n"
+    final_node = Node(string_to_board(board_pp_after_simulation), PLAYER1)
+    node_selected = test_node_full.select_node_for_simulation()
+    assert ((node_selected.board == final_node.board).all())
+    assert node_selected.player == PLAYER1
+    assert node_selected.parent_node == test_node_full
+    assert node_selected.parent_action == 0
+    assert node_selected.children == []
+    assert node_selected.nb_visits == 0
+    assert node_selected.win_count == 0
+    assert node_selected.loss_count == 0
+    assert node_selected.game_state == GameState.IS_DRAW
+
+
 def test_expand():
     from agents.agent_mcts.mcts import Node
     from agents.games_utils import string_to_board
@@ -246,7 +298,7 @@ def test_simulation():
     test_node_2 = Node(string_to_board(board_pp_2), PLAYER2)
     # should end up winning once column 1, 4 or 6 is selected. PLAYER1 should not win. might end in a tie
     result_simulation_2 = test_node_2.simulation()
-    assert result_simulation_2 == 1 or result_simulation_2 == -1000
+    assert result_simulation_2 == 1 or result_simulation_2 == 0
 
     board_pp_3 = "|==============|\n" \
                  "|    O     O   |\n" \
@@ -260,7 +312,7 @@ def test_simulation():
     test_node_3 = Node(string_to_board(board_pp_3), PLAYER1)
     # player 2 might win (loss of player 1) or it could end in a tie
     result_simulation = test_node_3.simulation()
-    assert (result_simulation == -1000) or (result_simulation == -1)
+    assert (result_simulation == 0) or (result_simulation == -1)
 
 
 def test_backpropagation():
@@ -303,42 +355,6 @@ def test_backpropagation():
     assert test_node_parent.nb_visits == 1
     assert test_node_parent.win_count == 1
     assert test_node_parent.loss_count == 0
-
-
-def test_select_node_for_simulation():
-    from agents.agent_mcts.mcts import Node
-    from agents.games_utils import string_to_board
-    board_pp = "|==============|\n" \
-               "|  X X O X O O |\n" \
-               "|O O X O O X O |\n" \
-               "|O O O X O X X |\n" \
-               "|O X O X O X O |\n" \
-               "|X O X X X O X |\n" \
-               "|X X X O X X O |\n" \
-               "|==============|\n" \
-               "|0 1 2 3 4 5 6 |\n"
-    test_node_full = Node(string_to_board(board_pp), PLAYER2)
-    # select_node should expand the previous board and return this new board
-    board_pp_after_simulation = "|==============|\n" \
-                                "|O X X O X O O |\n" \
-                                "|O O X O O X O |\n" \
-                                "|O O O X O X X |\n" \
-                                "|O X O X O X O |\n" \
-                                "|X O X X X O X |\n" \
-                                "|X X X O X X O |\n" \
-                                "|==============|\n" \
-                                "|0 1 2 3 4 5 6 |\n"
-    final_node = Node(string_to_board(board_pp_after_simulation), PLAYER1)
-    node_selected = test_node_full.select_node_for_simulation()
-    assert ((node_selected.board == final_node.board).all())
-    assert node_selected.player == PLAYER1
-    assert node_selected.parent_node == test_node_full
-    assert node_selected.parent_action == 0
-    assert node_selected.children == []
-    assert node_selected.nb_visits == 0
-    assert node_selected.win_count == 0
-    assert node_selected.loss_count == 0
-    assert node_selected.game_state == GameState.IS_LOST
 
 
 def test_select_best_action():

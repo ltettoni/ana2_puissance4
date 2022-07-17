@@ -39,7 +39,6 @@ class GameState(Enum):
     IS_WIN = 1
     IS_DRAW = -1
     STILL_PLAYING = 0
-    IS_LOST = -2
 
 
 def initialize_game_state() -> np.ndarray:
@@ -214,6 +213,4 @@ def check_end_state(board: np.ndarray, player: BoardPiece) -> GameState:
         game = GameState.IS_DRAW
     if connected_four(board, player):
         game = GameState.IS_WIN
-    if connected_four(board, other_player(player)):
-        game = GameState.IS_LOST
     return game

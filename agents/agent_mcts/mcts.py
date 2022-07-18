@@ -68,8 +68,8 @@ class Node:
 
     def get_random_untried_action(self) -> PlayerAction:
         """
-        Returns a random column to play in, out of the available ones. Available if a child hasn't been created
-        from this action yet.
+        Returns a random column to play in, out of the available ones.
+        Available if a child hasn't been created from this action yet.
         """
 
         self.update_actions()
@@ -90,23 +90,25 @@ class Node:
 
     def final_points(self) -> int:
         """
-        Returns the result of the board of the node : -1 if the game is lost to the other player,
-        0 if the game is still playing or ends in a draw and 1 if the game is won.
+        Returns the result of the board of the node:
+         -1 if the game is lost to the other player,
+         0 if the game is still playing or ends in a draw,
+         +1 if the game is won.
         """
-
-        result = 0
         # find out if other player has won
         end_state_other_player = check_end_state(self.board, self.next_player())
-        # update game state
+        # update game state for us current player
         self.game_state = check_end_state(self.board, self.player)
+
+        result = 0
         if end_state_other_player == GameState.IS_WIN:
-            # -1 if the other player wins and we lose
+            # -1 if the game is lost to the other player
             result = -1
         elif self.game_state == GameState.STILL_PLAYING or self.game_state == GameState.IS_DRAW:
-            # 0 if draw or game still on
+            # 0 if the game is still playing or ends in a draw
             result = 0
         elif self.game_state == GameState.IS_WIN:
-            # 1 if the current player wins
+            # +1 if the game is won
             result = 1
         return result
 
@@ -145,7 +147,7 @@ class Node:
     def ucb1_alternative(self) -> float:
         """
         Returns the result of the upper confidence bound 1 formula for this node, using lose_count instead of win_count.
-        The idea is that the lose count of this node corresponds to the wins for the parent node (because they depend
+        The idea is that the lose_count of this node corresponds to the wins for the parent node (because they depend
         on different players).
         """
 
@@ -176,18 +178,17 @@ class Node:
 
     def select_node_for_simulation(self) -> Node:
         """
-        Selects a node to do a game simulation on (step 1 of MCTS).
-        wiki :
+        Selects a node to do a game simulation (step 1 of MCTS).
+        Wikipedia reads:
         "select successive child nodes until a leaf node L is reached. The root is the current game state and a leaf is
         any node that has a potential child from which no simulation (playout) has yet been initiated."
         Returns the chosen node. If the current node is at the end of the tree, we choose this one.
         """
 
         running_node = self
-        # to go down in tree : the node has to have expanded all its children (not be a leaf) and not be a terminal
-        # state
+        # to go down in tree : the node has to have expanded all its children (not be a "leaf") and not be a terminal state
         while running_node.tried_all_actions() and not running_node.game_is_over():
-            # go down and choose the best child
+            # go down by choosing the best child
             running_node = running_node.best_child()
         if running_node.game_is_over():
             return running_node
@@ -197,8 +198,7 @@ class Node:
     def expand(self) -> Node:
         """
         Expands the tree by creating a new node (step 2 of MCTS).
-        It is randomly created from the current node by choosing a random
-        untried action.
+        It is randomly created from the current node by choosing a random untried action.
         Returns the new node.
         """
 
@@ -212,25 +212,29 @@ class Node:
     def simulation(self) -> int:
         """
         Simulates a random playout from the current node, until the game is over (step 3 of MCTS).
-        Returns the result of that playout (-1, 0 or 1).
+        Returns the result of that playout (-1, 0 or 1), from the current player's point of view.
         """
 
         current_board = self.board
-        # initialize the running node with the current node's informations
+        # initialize the running node with the current node's information (start playing with tue current player)
         running_node = Node(current_board, self.player)
+
+        # Simulate each player in turn, until the current_board can no longer be played
         while check_end_state(current_board, running_node.player) == GameState.STILL_PLAYING:
             random_action = get_random_legal_action(current_board)
             current_board = running_node.apply_move(random_action)
+            # Update the running node to continue the simulation with next player
             running_node.board = current_board
             running_node.player = running_node.next_player()
-        # put the player of the last node as the player of the 1st node, to compute the right score
+        # Now the game can no longer be played, we compute the score from the initial player's point of view
         running_node.player = self.player
         final_points = running_node.final_points()
         return final_points
 
     def backpropagation(self, result) -> None:
         """
-        Backpropagation of the result : update of current node and update of parent nodes (step 4 of MCTS).
+        Backpropagation of the result : update of current node and then all its
+        parent nodes up to the root (step 4 of MCTS).
         """
 
         self.nb_visits += 1
@@ -238,9 +242,11 @@ class Node:
             self.loss_count += 1
         elif result == 1:
             self.win_count += 1
-        if self.parent_node is not None:
+
+        # Recursive backpropagation to the parent
+        if self.parent_node is not None: # we are not the root
             # backpropagate the opposite result to the parent, because it has the other player as its player.
-            self.parent_node.backpropagation(result * (-1))
+            self.parent_node.backpropagation(-result)
 
     def select_best_action(self) -> PlayerAction:
         """
@@ -248,6 +254,9 @@ class Node:
         fixed number of iterations.
         Returns the most optimal action to play.
         """
+
+        # Maybe be here instead of fixing the number of loops we could measure the current system time
+        # and iterate while the simulation did not exceed a given period, say, 1 second of real-time.
 
         simulation_nb = 1500
         for simulation in range(simulation_nb):
@@ -259,6 +268,8 @@ class Node:
         # for debugging / understanding purposes
         # self.display_full_tree()
         return action
+
+    # UTILITY METHODS TO DISPLAY THE TREE
 
     def display_node(self):
         """
@@ -279,8 +290,6 @@ class Node:
             acc = str(running.parent_action) + acc
             running = running.parent_node
         return acc.removeprefix("None")
-
-    # DISPLAY THE TREE
 
     # Recursive depth-first is not ideal to represent the tree
     def display_tree(self, max_depth: int, depth: int) -> None:

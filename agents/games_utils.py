@@ -224,16 +224,16 @@ def other_player(curr_player: BoardPiece) -> BoardPiece:
 
 def check_end_state(board: np.ndarray, player: BoardPiece) -> GameState:
     """
-    Returns the current game state for the current `player`, i.e. has their last
-    action won (GameState.IS_WIN) or drawn (GameState.IS_DRAW) the game,
+    Returns the current game state for the specified player, i.e. has their last
+    action in the specified board won (GameState.IS_WIN) or drawn (GameState.IS_DRAW),
     or is play still on-going (GameState.STILL_PLAYING)?
     """
 
-    # Check the most likely situation first
+    # Start checking with a potential more frequent case
     if connected_four(board, player):
         return GameState.IS_WIN
-    # Then a full board
+    # Then a full board situation, that happens less frequently
     if check_board_full(board):
         return GameState.IS_DRAW
-    # Otherwise, we are still playing
+    # Otherwise, game is open and we are still playing
     return GameState.STILL_PLAYING

@@ -30,7 +30,7 @@ class Node:
     def __init__(self, board: np.ndarray, player: BoardPiece, parent_node: Node = None,
                  parent_action: PlayerAction = None) -> None:
         """
-        Constructor function for the class Node
+        Constructor function for the class Node.
         """
 
         self.board: np.ndarray = board
@@ -52,24 +52,30 @@ class Node:
         """
         Updates the tried and untried actions of the current node. To be used after we expanded the node or before
         getting a random action.
-        Returns the list of untried actions.
+        Returns:
+            list[PlayerAction]: the list of untried actions.
         """
+
         possible_actions = legal_actions(self.board)
-        self.tried_actions = [children.parent_action for children in self.children]
+        self.tried_actions = [child.parent_action for child in self.children]
         self.untried_actions = [action for action in possible_actions if action not in self.tried_actions]
         return self.untried_actions
 
-    def next_player(self) -> np.int8:
+    def next_player(self) -> PlayerAction:
         """
-        Returns the next (or previous) player.
+        Finds the next (or previous) player.
+        Returns:
+            PlayerAction: the other player.
         """
 
         return PLAYER1 if self.player == PLAYER2 else PLAYER2
 
     def get_random_untried_action(self) -> PlayerAction:
         """
-        Returns a random column to play in, out of the available ones. Available if a child hasn't been created
-        from this action yet.
+        Finds a random column to play in, out of the available ones. An action is available
+        if a child hasn't been created from this action yet.
+        Returns:
+            PlayerAction: the random untried column.
         """
 
         self.update_actions()
@@ -79,8 +85,9 @@ class Node:
 
     def game_is_over(self) -> bool:
         """
-        Updates the game state and returns true if the game is over.
-        Returns false if the game is still playing.
+        Updates the game state.
+        Returns:
+             bool: false if the game is still playing, true if the game is over.
         """
 
         self.game_state = check_end_state(self.board, self.player)
@@ -90,8 +97,10 @@ class Node:
 
     def final_points(self) -> int:
         """
-        Returns the result of the board of the node : -1 if the game is lost to the other player,
+        Finds the result of the board of the node : -1 if the game is lost to the other player,
         0 if the game is still playing or ends in a draw and 1 if the game is won.
+        Returns:
+            int: the final points of the board.
         """
 
         result = 0
@@ -113,8 +122,10 @@ class Node:
     def apply_move(self, action) -> np.ndarray:
         """
         Applies the requested action to the board. Doesn't modify the node's board after application.
-        Returns the new board after modification.
-        :param action: column to be played in
+        Args:
+            action (PlayerAction): column to be played in.
+        Returns:
+            np.ndarray: the new board after modification.
         """
 
         new_board = apply_player_action(self.board, action, self.player)
@@ -123,16 +134,20 @@ class Node:
     def tried_all_actions(self) -> bool:
         """
         Updates the tried and untried actions.
-        Returns true if we tried all actions available.
-        Returns false if there are still actions to be tried.
+        Returns:
+            bool: true if we tried all actions available, false if there are still actions to be tried.
         """
 
         self.update_actions()
         return len(self.untried_actions) == 0
 
-    def ucb1(self) -> float:
+    def ucb1_win(self) -> float:
         """
-        Returns the result of the upper confidence bound 1 formula for this node, using the win_count.
+        Finds the result of the upper confidence bound 1 formula for this node, using the win_count.
+        Raises:
+            ValueError: to avoid a division by 0.
+        Returns:
+            float: result of ucb1 for wins.
         """
 
         # raises a ValueError to avoid a division by zero
@@ -142,11 +157,15 @@ class Node:
         exploration = self.exploration_param * np.sqrt(np.log(self.parent_node.nb_visits) / self.nb_visits)
         return expectation + exploration
 
-    def ucb1_alternative(self) -> float:
+    def ucb1_loss(self) -> float:
         """
-        Returns the result of the upper confidence bound 1 formula for this node, using lose_count instead of win_count.
-        The idea is that the lose count of this node corresponds to the wins for the parent node (because they depend
+        Finds the result of the upper confidence bound 1 formula for this node, using lose_count instead of win_count.
+        The idea is that the loss count of this node corresponds to the wins for the parent node (because they depend
         on different players).
+        Raises:
+            ValueError: to avoid a division by 0.
+        Returns:
+            flaot: result of ucb1 for losses.
         """
 
         # raises a ValueError to avoid a division by zero
@@ -158,19 +177,23 @@ class Node:
 
     def best_child(self) -> Node:
         """
-        Returns the child that has the best ucb1 score out of all the node's children.
+        Finds the child that has the best ucb1 score out of all the node's children.
+        Returns:
+            Node: the best child
         """
 
-        children_ucb1 = [child.ucb1() for child in self.children]
+        children_ucb1 = [child.ucb1_win() for child in self.children]
         best_child = self.children[np.argmax(children_ucb1)]
         return best_child
 
     def best_child_alternative(self) -> Node:
         """
-        Returns the child that has the best ucb1 alternative score out of all the node's children.
+        Finds the child that has the best ucb1 alternative score (computed with loss) out of all the node's children.
+        Returns:
+            Node: the best child according to the root node
         """
 
-        children_ucb1_alt = [child.ucb1_alternative() for child in self.children]
+        children_ucb1_alt = [child.ucb1_loss() for child in self.children]
         best_child_alt = self.children[np.argmax(children_ucb1_alt)]
         return best_child_alt
 
@@ -180,7 +203,8 @@ class Node:
         wiki :
         "select successive child nodes until a leaf node L is reached. The root is the current game state and a leaf is
         any node that has a potential child from which no simulation (playout) has yet been initiated."
-        Returns the chosen node. If the current node is at the end of the tree, we choose this one.
+        Returns
+            Node: the chosen node. If the current node is at the end of the tree, we choose this one.
         """
 
         running_node = self
@@ -199,7 +223,8 @@ class Node:
         Expands the tree by creating a new node (step 2 of MCTS).
         It is randomly created from the current node by choosing a random
         untried action.
-        Returns the new node.
+        Returns
+            Node: the new node.
         """
 
         random_action = self.get_random_untried_action()
@@ -212,7 +237,8 @@ class Node:
     def simulation(self) -> int:
         """
         Simulates a random playout from the current node, until the game is over (step 3 of MCTS).
-        Returns the result of that playout (-1, 0 or 1).
+        Returns
+            int: the result of that playout (-1, 0 or 1).
         """
 
         current_board = self.board
@@ -246,7 +272,8 @@ class Node:
         """
         Selects the best action for the current board. Puts all the step of MCTS together and does them for a
         fixed number of iterations.
-        Returns the most optimal action to play.
+        Returns:
+            PlayerAction: the most optimal action to play.
         """
 
         simulation_nb = 1500
@@ -260,19 +287,23 @@ class Node:
         # self.display_full_tree()
         return action
 
-    def display_node(self):
+    def display_node(self) -> None:
         """
-        Displays a node and its information. To be used in display_tree
+        Displays a node and its information. To be used in display_tree.
         """
+
         print("level=" + str(self.level) + ", action=" + str(
             self.parent_action) + ", actionsToHere=" + self.actions_to_here() + " score=" + str(self.win_count) + "/" +
               str(self.nb_visits) + ", nextPlayer=" + str(self.player))
         print(pretty_print_board(self.board))
 
-    def actions_to_here(self):
+    def actions_to_here(self) -> str:
         """
         Shows the successive actions which lead to the board.
+        Returns:
+            str: the string of actions.
         """
+
         acc: str = ""
         running = self
         while running is not None:
@@ -280,10 +311,11 @@ class Node:
             running = running.parent_node
         return acc.removeprefix("None")
 
-    # DISPLAY THE TREE
-
-    # Recursive depth-first is not ideal to represent the tree
     def display_tree(self, max_depth: int, depth: int) -> None:
+        """
+        Displays the tree. Recursive depth-first is not ideal to represent the tree.
+        """
+
         # displays the tree
         if depth >= max_depth:
             return
@@ -291,15 +323,21 @@ class Node:
         for child in self.children:
             child.display_tree(max_depth, depth + 1)
 
-    # Only display nodes at a given level, starting with decounter=1
     def display_tree_at_level(self, decounter: int) -> None:
+        """
+        Only displays nodes at a given level, starting with decounter=1
+        """
+
         if decounter == 1:
             self.display_node()
         for child in self.children:
             child.display_tree_at_level(decounter - 1)
 
-    # Breadth first display (root node, then all level 2, then all level 3, etc)
     def display_full_tree(self) -> None:
+        """
+        Displays the tree with breadth first display (root node, then all level 2, then all level 3, etc)
+        """
+
         print("\n------------------------ FULL TREE ------------------------")
         for level in range(1, 10):
             self.display_tree_at_level(level)
@@ -307,8 +345,13 @@ class Node:
 
 def get_random_legal_action(board: np.ndarray) -> PlayerAction:
     """
-    Returns a random legal action for this board. To be used in the simulation step.
+    Finds a random legal action for this board. To be used in the simulation step.
+    Args:
+        board (np.ndarray): the board to find the actions for.
+    Returns:
+        PlayerActions: the random legal action to play
     """
+
     curr_legal_actions = legal_actions(board)
     random_number = np.random.randint(0, len(curr_legal_actions))
     random_action = curr_legal_actions[random_number]
@@ -319,7 +362,14 @@ def generate_move(board: np.ndarray, player: BoardPiece, saved_state: Optional[S
         Tuple[PlayerAction, Optional[SavedState]]:
     """
     Generates the best move for the current board.
+    Args:
+        board (np.ndarray): board to generate the move for.
+        player (BoardPiece): player who will play the move.
+        saved_state (Optional[SavedState]): not used.
+    Returns:
+        Tuple[PlayerAction, Optional[SavedState]]: the best action and a saved state (not used).
     """
+
     # force 1st move in column 3 because it's the best move possible
     if (board == initialize_game_state()).all():
         action = 3

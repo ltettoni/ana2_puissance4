@@ -148,7 +148,7 @@ def test_ucb1():
     test_artificial_node.nb_visits = 3
     test_artificial_node.win_count = 2
     test_fake_parent_node.nb_visits = 5
-    assert test_artificial_node.ucb1() == 2.0 / 3.0 + sqrt(2) * sqrt(log(5) / 3.0)
+    assert test_artificial_node.ucb1_win() == 2.0 / 3.0 + sqrt(2) * sqrt(log(5) / 3.0)
 
 
 def test_best_child():
